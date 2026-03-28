@@ -175,7 +175,7 @@ const useAuthStore = create((set) => ({
 
     try {
       await ApiClient.post(endpoints.auth.logout);
-    } catch (err) {}
+    } catch (err) { }
 
     localStorage.removeItem("authToken");
     localStorage.removeItem("refreshToken");
