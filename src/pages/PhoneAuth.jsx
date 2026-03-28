@@ -1,5 +1,4 @@
-import usePhoneAuth from "../store/usePhoneAuth";
-
+import { usePhoneAuth } from "../store/usePhoneAuth";
 const PhoneAuth = ({ onSuccess, onCancel }) => {
   const {
     phoneNumber,
