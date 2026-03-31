@@ -3,17 +3,18 @@ import { Link, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { ShoppingCart, Menu, X, MessageCircle } from "lucide-react";
 import { useStore } from "../store/useStore";
+import { useCartStore } from "../store/CartStore";
 import useAuthStore from "../store/authStore";
 
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  const { cart, setChatOpen } = useStore();
+  const { setChatOpen } = useStore();
+  const { cartCount } = useCartStore();
   const token = useAuthStore((state) => state.token);
   const authUser = useAuthStore((state) => state.user);
 
-  const cartCount = cart.reduce((s, c) => s + c.qty, 0);
   const location = useLocation();
   const isHome = location.pathname === "/";
 
