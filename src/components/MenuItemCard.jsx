@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { Heart, Plus, Clock, Flame, Star } from "lucide-react";
-import { useStore } from "../store/useStore";
+import { useCartStore } from "../store/CartStore";
 
 const BADGE_STYLES = {
   bestseller: "bg-saffron-400 text-forest-900",
@@ -24,14 +24,18 @@ const getImage = (item) =>
 
 const getId = (item) => item?._id || item?.id;
 
-export default function MenuItemCard({ item, index = 0 }) {
-  const { addToCart, toggleWishlist, wishlist, addToast } = useStore();
+export default function MenuItemCard({ item, index = 0, onAddToCart }) {
+  const { addToCart } = useCartStore();
 
-  const isWished = wishlist.includes(getId(item));
-
-  const handleAdd = () => {
-    addToCart(item);
-    addToast(`${item.name} added to cart 🛒`);
+  const handleAdd = (e) => {
+    e.stopPropagation();
+    const id = getId(item);
+    if (!id) return;
+    if (typeof onAddToCart === "function") {
+      onAddToCart();
+    } else {
+      addToCart(id, 1);
+    }
   };
 
   return (
@@ -43,7 +47,6 @@ export default function MenuItemCard({ item, index = 0 }) {
       transition={{ delay: index * 0.07, type: "spring", stiffness: 150 }}
       whileHover={{ y: -4 }}
     >
-      {/* Image */}
       <div className="relative h-44 overflow-hidden rounded-t-2xl bg-gray-100">
         <motion.img
           src={getImage(item)}
@@ -69,22 +72,8 @@ export default function MenuItemCard({ item, index = 0 }) {
             -{Math.round((1 - item.price / item.originalPrice) * 100)}%
           </span>
         )}
-        <motion.button
-          onClick={(e) => {
-            e.stopPropagation();
-            toggleWishlist(getId(item));
-          }}
-          className="absolute bottom-3 right-3 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-md"
-          whileTap={{ scale: 0.85 }}
-        >
-          <Heart
-            size={15}
-            className={isWished ? "fill-red-500 text-red-500" : "text-gray-400"}
-          />
-        </motion.button>
       </div>
 
-      {/* Content */}
       <div className="p-4">
         <div className="flex items-start justify-between mb-1">
           <h3 className="font-display font-semibold text-forest-900 text-sm leading-snug flex-1 pr-2">
@@ -121,11 +110,11 @@ export default function MenuItemCard({ item, index = 0 }) {
         <div className="flex items-center justify-between">
           <div>
             <span className="font-display font-bold text-forest-800 text-base">
-              ${item.price}
+              ₹{item.price}
             </span>
             {item.originalPrice && (
               <span className="text-xs text-gray-400 line-through ml-1">
-                ${item.originalPrice}
+                ₹{item.originalPrice}
               </span>
             )}
           </div>
