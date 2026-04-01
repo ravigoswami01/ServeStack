@@ -13,10 +13,10 @@ import CartPage from "./pages/CartPage";
 import BookingPage from "./pages/BookingPage";
 import ProfilePage from "./pages/ProfilePage";
 import LoginRegister from "./pages/Loginpage";
-
 import ProtectedRoute from "./Router/ProtectedRoute";
 
 import { motion, AnimatePresence } from "framer-motion";
+import CheckOutPage from "./pages/CheckOutPage";
 
 function AnimatedRoutes() {
   const location = useLocation();
@@ -35,6 +35,7 @@ function AnimatedRoutes() {
           <Route path="/menu" element={<MenuPage />} />
           <Route path="/cart" element={<CartPage />} />
           <Route path="/booking" element={<BookingPage />} />
+          <Route path="/checkout" element={<CheckOutPage />} />
 
           <Route
             path="/profile"
