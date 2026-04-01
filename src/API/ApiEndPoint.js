@@ -30,4 +30,8 @@ export const endpoints = {
     updateStatus: (id) => `/api/orders/${id}/status`,
     cancel: (id) => `/api/orders/${id}/cancel`,
   },
+  promoCode: {
+    apply: "/api/promos/apply",
+  }
+
 };
