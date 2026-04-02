@@ -17,6 +17,7 @@ import ProtectedRoute from "./Router/ProtectedRoute";
 
 import { motion, AnimatePresence } from "framer-motion";
 import CheckOutPage from "./pages/CheckOutPage";
+import OrderDetailsPage from "./pages/OrderDetailsPage";
 
 function AnimatedRoutes() {
   const location = useLocation();
@@ -36,6 +37,7 @@ function AnimatedRoutes() {
           <Route path="/cart" element={<CartPage />} />
           <Route path="/booking" element={<BookingPage />} />
           <Route path="/checkout" element={<CheckOutPage />} />
+          <Route path="/order-success" element={<OrderDetailsPage />} />
 
           <Route
             path="/profile"

@@ -4,7 +4,6 @@ import { Minus, Plus, Trash2, Loader2 } from "lucide-react";
 import { useCartStore } from "../store/CartStore";
 
 const DELIVERY_FEE = 40;
-const BASE_URL = "http://localhost:5000"; // 🔥 change if needed
 
 export default function CartPage() {
   const {

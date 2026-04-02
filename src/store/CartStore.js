@@ -6,6 +6,7 @@ import { endpoints } from "../API/ApiEndPoint";
 const normalizeCart = (items = []) =>
   items.map((item) => ({
     menuItemId: item?.menuItem?._id,
+    restaurantId: item?.menuItem?.restaurantId ?? item?.restaurantId ?? "default",
     name: item?.menuItem?.name ?? item?.name,
     description: item?.menuItem?.description ?? item?.description ?? "",
     price: Number(item?.menuItem?.price ?? item?.price ?? 0),
@@ -36,6 +37,7 @@ export const useCartStore = create(
         try {
           const res = await apiClient.get(endpoints.cart.get);
           const cart = normalizeCart(res.cart?.items ?? []);
+
 
           set({
             cart,
