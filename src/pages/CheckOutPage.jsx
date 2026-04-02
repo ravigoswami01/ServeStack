@@ -1,12 +1,11 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { Loader2, Home, Utensils } from "lucide-react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useCartStore } from "../store/CartStore";
-import { useCheckoutStore } from "../store/checkoutStore";
+import { useOrderStore } from "../store/useOrderStore";
 
 export default function CheckOutPage() {
   const navigate = useNavigate();
-  const { state } = useLocation(); // ✅ GET DATA FROM CART
 
   const { cart, clearCart } = useCartStore();
 
@@ -20,33 +19,23 @@ export default function CheckOutPage() {
     placeOrder,
     loading,
     error,
-  } = useCheckoutStore();
+  } = useOrderStore();
 
-  /* ================= SAFE FALLBACK ================= */
-  const subtotal = state?.subtotal || 0;
-  const delivery = state?.delivery || 0;
-  const discount = state?.discount || 0;
-  const total = state?.total || 0;
+  const subtotal = cart.reduce(
+    (sum, item) => sum + item.price * item.quantity,
+    0,
+  );
 
-  /* ================= VALIDATION ================= */
-  const isValid =
-    orderType === "delivery"
-      ? address.street && address.city && address.phone
-      : tableNumber;
+  const delivery = orderType === "delivery" ? 40 : 0;
+  const discount = 0;
+  const total = subtotal + delivery - discount;
 
-  /* ================= PLACE ORDER ================= */
   const handleOrder = async () => {
-    if (!isValid) return;
+    if (!cart?.length) return;
 
-    const res = await placeOrder({
-      cart,
-      pricing: { subtotal, delivery, discount, total },
-      orderType,
-      address,
-      tableNumber,
-    });
+    const res = await placeOrder(cart);
 
-    if (res.success) {
+    if (res?.success) {
       clearCart();
       navigate("/order-success", {
         state: { order: res.order },
@@ -54,7 +43,7 @@ export default function CheckOutPage() {
     }
   };
 
-  if (!cart.length) {
+  if (!cart?.length) {
     return (
       <div className="h-screen flex justify-center items-center">
         <h2 className="text-xl font-semibold">Your cart is empty</h2>
@@ -70,13 +59,11 @@ export default function CheckOutPage() {
         animate={{ opacity: 1, x: 0 }}
         className="lg:col-span-2 space-y-6"
       >
-        <h1 className="text-2xl font-bold">Checkout</h1>
-
         {/* ORDER TYPE */}
         <div className="flex gap-4">
           <button
             onClick={() => setOrderType("delivery")}
-            className={`px-4 py-2 rounded-lg ${
+            className={`px-4 py-2 rounded-lg flex items-center gap-2 ${
               orderType === "delivery" ? "bg-green-600 text-white" : "border"
             }`}
           >
@@ -85,7 +72,7 @@ export default function CheckOutPage() {
 
           <button
             onClick={() => setOrderType("dine-in")}
-            className={`px-4 py-2 rounded-lg ${
+            className={`px-4 py-2 rounded-lg flex items-center gap-2 ${
               orderType === "dine-in" ? "bg-green-600 text-white" : "border"
             }`}
           >
@@ -100,23 +87,24 @@ export default function CheckOutPage() {
               key="delivery"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
               className="grid grid-cols-2 gap-4 bg-gray-50 p-4 rounded-xl"
             >
               <input
                 placeholder="Street"
-                value={address.street}
+                value={address?.street}
                 onChange={(e) => setAddress("street", e.target.value)}
                 className="col-span-2 p-2 border rounded"
               />
               <input
                 placeholder="City"
-                value={address.city}
+                value={address?.city}
                 onChange={(e) => setAddress("city", e.target.value)}
                 className="p-2 border rounded"
               />
               <input
                 placeholder="Phone"
-                value={address.phone}
+                value={address?.phone}
                 onChange={(e) => setAddress("phone", e.target.value)}
                 className="p-2 border rounded"
               />
@@ -138,25 +126,39 @@ export default function CheckOutPage() {
       </motion.div>
 
       {/* RIGHT */}
-      <motion.div className="border rounded-xl p-5 space-y-4 shadow-sm">
+      <motion.div
+        initial={{ opacity: 0, x: 30 }}
+        animate={{ opacity: 1, x: 0 }}
+        className="border rounded-xl p-5 space-y-4 shadow-sm"
+      >
         <h2 className="font-bold text-lg">Order Summary</h2>
 
-        {/* ITEMS */}
-        <div className="space-y-2 max-h-40 overflow-auto">
+        <div className="space-y-3 max-h-60 overflow-auto">
           {cart.map((item, index) => (
             <div
-              key={`${item.menuItemId}-${index}`} // ✅ FIXED
-              className="flex justify-between text-sm"
+              key={`${item.menuItemId || item._id}-${index}`}
+              className="flex items-center gap-3"
             >
-              <span>
-                {item.name} × {item.quantity}
-              </span>
-              <span>₹{(item.price * item.quantity).toFixed(2)}</span>
+              <img
+                src={item.image || "https://via.placeholder.com/60"}
+                alt={item.name}
+                className="w-12 h-12 rounded object-cover"
+              />
+
+              <div className="flex-1 text-sm">
+                <p className="font-medium">{item.name}</p>
+                <p className="text-gray-500">
+                  {item.quantity} × ₹{item.price}
+                </p>
+              </div>
+
+              <p className="text-sm font-medium">
+                ₹{(item.price * item.quantity).toFixed(2)}
+              </p>
             </div>
           ))}
         </div>
 
-        {/* PRICE */}
         <div className="border-t pt-3 space-y-2 text-sm">
           <div className="flex justify-between">
             <span>Subtotal</span>
@@ -168,23 +170,15 @@ export default function CheckOutPage() {
             <span>₹{delivery.toFixed(2)}</span>
           </div>
 
-          {discount > 0 && (
-            <div className="flex justify-between text-green-600">
-              <span>Discount</span>
-              <span>-₹{discount.toFixed(2)}</span>
-            </div>
-          )}
-
           <div className="flex justify-between font-bold text-lg">
             <span>Total</span>
             <span>₹{total.toFixed(2)}</span>
           </div>
         </div>
 
-        {/* BUTTON */}
         <button
           onClick={handleOrder}
-          disabled={loading || !isValid}
+          disabled={loading}
           className="w-full bg-green-600 text-white py-3 rounded-lg flex justify-center items-center gap-2 disabled:opacity-50"
         >
           {loading && <Loader2 className="animate-spin" />}

@@ -76,7 +76,7 @@ export const useCheckoutStore = create((set, get) => ({
             if (validationError) throw new Error(validationError);
 
             const payload = {
-                restaurantId: cart[0]?.restaurantId,
+                restaurantId: cart[0]?.restaurantId || "default",
                 orderType,
                 items: cart.map((item) => ({
                     menuItemId: item.menuItemId,
