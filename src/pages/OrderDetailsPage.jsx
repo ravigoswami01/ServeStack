@@ -21,41 +21,13 @@ export default function OrderDetailsPage() {
   const { getOrder, order, loading, error } = useOrderStore();
 
   useEffect(() => {
-    const fetchOrder = async () => {
-      try {
-        const id = orderId || state?.order?._id;
-
-        console.log("📍 Looking for order ID:", id);
-
-        if (!id) {
-          console.warn("❌ No order ID found in params or state");
-          return;
-        }
-
-        console.log("🔄 Fetching order with ID:", id);
-        const result = await getOrder(id);
-
-        console.log("✅ Order fetch result:", result);
-        if (result.order) {
-          console.log("✅ Order data received:", result.order);
-        }
-      } catch (err) {
-        console.error("❌ Error fetching order:", err);
-      }
-    };
-
-    // If we have order in state, use it directly
-    if (state?.order) {
-      console.log("✅ Using order from state:", state.order);
-    } else {
-      // Otherwise fetch from API
-      fetchOrder();
+    const id = orderId || state?.order?._id;
+    if (id) {
+      getOrder(id);
     }
   }, [orderId, state?.order, getOrder]);
 
-  // 🔄 Loading state
   if (loading && !order) {
-    console.log("⏳ Loading order...");
     return (
       <div className="h-screen flex flex-col items-center justify-center bg-gray-50">
         <Loader2 size={48} className="text-green-600 animate-spin" />
@@ -66,15 +38,9 @@ export default function OrderDetailsPage() {
     );
   }
 
-  // Get order data - either from Zustand store or from state
   const orderData = order || state?.order;
 
-  console.log("📊 Current order data:", orderData);
-  console.log("📊 Current error:", error);
-
-  // ❌ No order found
   if (!orderData) {
-    console.error("❌ No order data available", { order, state });
     return (
       <div className="h-screen flex flex-col items-center justify-center bg-gray-50">
         <div className="text-center space-y-4">
@@ -94,14 +60,9 @@ export default function OrderDetailsPage() {
     );
   }
 
-  // ✅ Status index
   const currentStepIndex =
     STATUS_FLOW.findIndex((s) => s.key === orderData.status) || 0;
 
-  console.log("✅ Order Status Index:", currentStepIndex);
-  console.log("✅ Order Items:", orderData.items);
-
-  // ✅ Reorder handler
   const handleReorder = () => {
     if (!orderData?.items?.length) return;
 
@@ -114,7 +75,6 @@ export default function OrderDetailsPage() {
       restaurantId: orderData.restaurantId,
     }));
 
-    console.log("🔄 Reordering items:", mappedItems);
     addMultipleToCart(mappedItems);
     navigate("/cart");
   };
