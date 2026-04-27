@@ -17,6 +17,7 @@ export default function CheckOutPage() {
     tableNumber,
     setTableNumber,
     placeOrder,
+    reset,
     loading,
     error,
   } = useOrderStore();
@@ -37,6 +38,7 @@ export default function CheckOutPage() {
 
     if (res?.success) {
       clearCart();
+      reset();
       navigate("/order-success", {
         state: { order: res.order },
       });

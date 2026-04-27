@@ -15,6 +15,7 @@ import useAuthStore from "../store/authStore";
 import { useOrderStore } from "../store/useOrderStore";
 import { MENU_ITEMS } from "../data/menu";
 import { Link } from "react-router-dom";
+import { useStore } from "../store/useStore";
 
 /* ================= TABS ================= */
 const TABS = [
@@ -71,7 +72,7 @@ export default function ProfilePage() {
 
   useEffect(() => {
     fetchOrders();
-  }, []);
+  }, [fetchOrders]);
 
   if (!user) {
     return (

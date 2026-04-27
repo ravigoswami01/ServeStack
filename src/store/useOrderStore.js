@@ -5,8 +5,10 @@ import { endpoints } from "../API/ApiEndPoint";
 export const useOrderStore = create((set, get) => ({
     orderType: "delivery",
     loading: false,
+    loadingOrders: false,
     error: null,
     order: null,
+    orders: [],
 
     address: {
         street: "",
@@ -40,6 +42,7 @@ export const useOrderStore = create((set, get) => ({
                 instructions: "",
             },
             tableNumber: "",
+            order: null,
             error: null,
         }),
 
@@ -98,14 +101,13 @@ export const useOrderStore = create((set, get) => ({
             if (validationError) throw new Error(validationError);
 
             const payload = get().buildPayload(cart);
-            console.log("Order Payload:", payload);
 
             const { data } = await apiClient.post(
                 endpoints.order.create,
                 payload
             );
 
-            set({ loading: false });
+            set({ loading: false, order: data });
 
             return { success: true, order: data };
         } catch (err) {
@@ -121,25 +123,33 @@ export const useOrderStore = create((set, get) => ({
         }
     },
 
-    getOrder: async (orderId) => {
+    fetchOrders: async () => {
         try {
-            set({ loading: true, error: null });
-
-            const { data } = await apiClient.get(
-                endpoints.order.getById(orderId)
-            );
-            set({ loading: false, order: data });
-
-            return { success: true, order: data };
+            set({ loadingOrders: true, error: null });
+            const { data } = await apiClient.get(endpoints.order.getAll);
+            set({ loadingOrders: false, orders: data });
+            return { success: true, orders: data };
         } catch (err) {
             const message =
                 err?.response?.data?.message ||
                 err?.response?.data?.error ||
                 err?.message ||
-                "Failed to fetch order";
+                "Failed to fetch orders";
 
+            set({ loadingOrders: false, error: message });
+            return { success: false, message };
+        }
+    },
+
+    getOrder: async (orderId) => {
+        try {
+            set({ loading: true, error: null });
+            const { data } = await apiClient.get(endpoints.order.getById(orderId));
+            set({ loading: false, order: data });
+            return { success: true, order: data };
+        } catch (err) {
+            const message = err?.response?.data?.message || err?.response?.data?.error || err?.message || "Failed to fetch order";
             set({ loading: false, error: message });
-
             return { success: false, message };
         }
     },
