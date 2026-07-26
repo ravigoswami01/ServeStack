@@ -39,6 +39,9 @@ export const endpoints = {
     getAll: "/api/bookings",
     getById: (id) => `/api/bookings/${id}`,
     cancel: (id) => `/api/bookings/${id}/cancel`,
-  }
+  },
 
+  ai: {
+    chat: "/api/ai/chat",
+  }
 };

@@ -1,27 +1,9 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Send, Bot, User, Sparkles, Loader2, ChefHat } from "lucide-react";
+import { X, Send, Bot, User, Loader2, ChefHat } from "lucide-react";
 import { useStore } from "../store/useStore";
-import { MENU_ITEMS } from "../data/menu";
-
-const SYSTEM_PROMPT = `You are "Chef AI", the friendly and knowledgeable virtual chef assistant for DelishDrop restaurant. 
-
-Your personality: warm, enthusiastic about food, helpful, occasionally uses food emojis, concise responses.
-
-Your capabilities:
-1. Recommend dishes based on preferences, dietary needs, mood
-2. Answer questions about ingredients, allergens, calorie counts
-3. Suggest meal combos and pairings
-4. Help with table bookings (direct users to the Booking page)
-5. Track orders (tell users to check their Profile page)
-6. Describe cooking methods and what makes each dish special
-
-Current menu highlights:
-${MENU_ITEMS.slice(0, 8)
-  .map((i) => `- ${i.name} ($${i.price}) — ${i.description}`)
-  .join("\n")}
-
-Keep responses under 3 sentences unless explaining something complex. Be conversational and use emojis naturally.`;
+import apiClient from "../API/axios";
+import { endpoints } from "../API/ApiEndPoint";
 
 const QUICK_PROMPTS = [
   "What's your best burger? 🍔",
@@ -32,18 +14,15 @@ const QUICK_PROMPTS = [
 
 export default function AIChat() {
   const { chatOpen, setChatOpen, user } = useStore();
+  const userName = user?.name ? user.name.split(" ")[0] : "there";
   const [messages, setMessages] = useState([
     {
       role: "assistant",
-      content: `Hey ${user.name.split(" ")[0]}! 👋 I'm Chef AI, your personal food guide at DelishDrop. What are you craving today? I can help you pick the perfect dish, suggest combos, or answer any food questions! 🍽️`,
+      content: `Hey ${userName}! 👋 I'm Chef AI, your personal food guide at DelishDrop. What are you craving today? I can help you pick the perfect dish, suggest combos, or answer any food questions! 🍽️`,
     },
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [apiKey, setApiKey] = useState(
-    localStorage.getItem("dd_api_key") || "",
-  );
-  const [showKeyInput, setShowKeyInput] = useState(false);
   const endRef = useRef(null);
   const inputRef = useRef(null);
 
@@ -55,20 +34,9 @@ export default function AIChat() {
     if (chatOpen) setTimeout(() => inputRef.current?.focus(), 300);
   }, [chatOpen]);
 
-  const saveApiKey = (key) => {
-    localStorage.setItem("dd_api_key", key);
-    setApiKey(key);
-    setShowKeyInput(false);
-  };
-
   const sendMessage = async (text) => {
     const msg = text || input.trim();
     if (!msg) return;
-
-    if (!apiKey) {
-      setShowKeyInput(true);
-      return;
-    }
 
     const userMsg = { role: "user", content: msg };
     const newMessages = [...messages, userMsg];
@@ -77,40 +45,27 @@ export default function AIChat() {
     setLoading(true);
 
     try {
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-api-key": apiKey,
-          "anthropic-version": "2023-06-01",
-          "anthropic-dangerous-direct-browser-access": "true",
-        },
-        body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
-          max_tokens: 400,
-          system: SYSTEM_PROMPT,
-          messages: newMessages.map((m) => ({
-            role: m.role,
-            content: m.content,
-          })),
-        }),
+      const res = await apiClient.post(endpoints.ai.chat, {
+        messages: newMessages.map((m) => ({
+          role: m.role,
+          content: m.content,
+        })),
       });
 
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error?.message || "API error");
-      }
-
-      const data = await res.json();
       const reply =
-        data.content[0]?.text || "I couldn't process that. Try again!";
+        res?.reply || res?.message || "I couldn't process that. Try again!";
       setMessages((prev) => [...prev, { role: "assistant", content: reply }]);
     } catch (err) {
+      console.error("AI Chat error:", err);
+      const errorMsg =
+        typeof err === "string"
+          ? err
+          : err?.message || err?.error || "Something went wrong. Please try again!";
       setMessages((prev) => [
         ...prev,
         {
           role: "assistant",
-          content: `⚠️ ${err.message.includes("invalid x-api-key") ? "Invalid API key. Click ⚙️ to update it." : "Something went wrong. Please try again!"}`,
+          content: `⚠️ ${errorMsg}`,
         },
       ]);
     } finally {
@@ -160,14 +115,6 @@ export default function AIChat() {
               </div>
               <div className="flex items-center gap-2">
                 <motion.button
-                  onClick={() => setShowKeyInput((v) => !v)}
-                  className="w-8 h-8 bg-white/10 rounded-full flex items-center justify-center text-white/70 hover:bg-white/20"
-                  whileTap={{ scale: 0.9 }}
-                  title="API Settings"
-                >
-                  <Sparkles size={14} />
-                </motion.button>
-                <motion.button
                   onClick={() => setChatOpen(false)}
                   className="w-8 h-8 bg-white/10 rounded-full flex items-center justify-center text-white/70 hover:bg-white/20"
                   whileTap={{ scale: 0.9 }}
@@ -176,45 +123,6 @@ export default function AIChat() {
                 </motion.button>
               </div>
             </div>
-
-            {/* API Key Setup */}
-            <AnimatePresence>
-              {showKeyInput && (
-                <motion.div
-                  className="bg-amber-50 border-b border-amber-200 p-3"
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: "auto", opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                >
-                  <p className="text-xs text-amber-800 font-medium mb-2">
-                    🔑 Enter Anthropic API Key
-                  </p>
-                  <div className="flex gap-2">
-                    <input
-                      type="password"
-                      placeholder="sk-ant-..."
-                      className="flex-1 text-xs border border-amber-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-forest-500"
-                      defaultValue={apiKey}
-                      onKeyDown={(e) =>
-                        e.key === "Enter" && saveApiKey(e.target.value)
-                      }
-                    />
-                    <button
-                      onClick={(e) =>
-                        saveApiKey(e.target.previousSibling.value)
-                      }
-                      className="px-3 py-2 bg-forest-700 text-white text-xs rounded-lg font-medium"
-                    >
-                      Save
-                    </button>
-                  </div>
-                  <p className="text-xs text-amber-700 mt-1.5">
-                    Get your key at{" "}
-                    <span className="underline">console.anthropic.com</span>
-                  </p>
-                </motion.div>
-              )}
-            </AnimatePresence>
 
             {/* Messages */}
             <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-clay-50">
@@ -226,9 +134,8 @@ export default function AIChat() {
                   animate={{ opacity: 1, y: 0 }}
                 >
                   <div
-                    className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${
-                      m.role === "user" ? "bg-forest-700" : "bg-saffron-400"
-                    }`}
+                    className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${m.role === "user" ? "bg-forest-700" : "bg-saffron-400"
+                      }`}
                   >
                     {m.role === "user" ? (
                       <User size={13} className="text-white" />
@@ -237,11 +144,10 @@ export default function AIChat() {
                     )}
                   </div>
                   <div
-                    className={`max-w-[78%] px-3.5 py-2.5 rounded-2xl text-sm leading-relaxed ${
-                      m.role === "user"
-                        ? "bg-forest-700 text-white rounded-tr-sm"
-                        : "bg-white text-gray-700 shadow-sm border border-gray-100 rounded-tl-sm"
-                    }`}
+                    className={`max-w-[78%] px-3.5 py-2.5 rounded-2xl text-sm leading-relaxed ${m.role === "user"
+                      ? "bg-forest-700 text-white rounded-tr-sm"
+                      : "bg-white text-gray-700 shadow-sm border border-gray-100 rounded-tl-sm"
+                      }`}
                   >
                     {m.content}
                   </div>
