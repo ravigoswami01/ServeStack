@@ -5,7 +5,7 @@ import { endpoints } from "../API/ApiEndPoint";
 const useAuthStore = create((set) => ({
   user: null,
   token: localStorage.getItem("authToken") || null,
-  loading: false,
+  loading: Boolean(localStorage.getItem("authToken")),
   error: null,
 
   setError: (error) => set({ error }),
@@ -21,7 +21,7 @@ const useAuthStore = create((set) => ({
         password,
       });
 
-      localStorage.setItem("Token", data.token);
+      localStorage.setItem("authToken", data.token);
       if (data.refreshToken) {
         localStorage.setItem("refreshToken", data.refreshToken);
       }
@@ -145,7 +145,10 @@ const useAuthStore = create((set) => ({
   /* ================= FETCH USER ================= */
   fetchUser: async () => {
     const token = localStorage.getItem("authToken");
-    if (!token) return;
+    if (!token) {
+      set({ user: null, token: null, loading: false });
+      return;
+    }
 
     set({ loading: true });
 

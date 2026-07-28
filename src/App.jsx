@@ -35,9 +35,23 @@ function AnimatedRoutes() {
           <Route path="/menu" element={<MenuPage />} />
           <Route path="/cart" element={<CartPage />} />
           <Route path="/booking" element={<BookingPage />} />
-          <Route path="/checkout" element={<CheckOutPage />} />
-          <Route path="/order-success" element={<OrderDetailsPage />} />
-
+          
+          <Route
+            path="/checkout"
+            element={
+              <ProtectedRoute>
+                <CheckOutPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/order-success"
+            element={
+              <ProtectedRoute>
+                <OrderDetailsPage />
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="/profile"
             element={
@@ -56,18 +70,10 @@ function AnimatedRoutes() {
 
 export default function App() {
   const fetchUser = useAuthStore((state) => state.fetchUser);
-  const loading = useAuthStore((state) => state.loading);
-  const token = useAuthStore((state) => state.token);
 
   useEffect(() => {
-    if (token) {
-      fetchUser();
-    }
-  }, [token]);
-
-  if (loading) {
-    return null;
-  }
+    fetchUser();
+  }, [fetchUser]);
 
   return (
     <BrowserRouter>
