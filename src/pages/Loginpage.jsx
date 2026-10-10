@@ -1,18 +1,28 @@
 import { useState, useEffect } from "react";
 import useAuthStore from "../store/authStore";
 import PhoneAuth from "../store/PhoneAuth";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
+
 const LoginRegister = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const from = location.state?.from?.pathname || "/profile";
 
   const {
     login,
     register,
     googleLogin,
+    token,
     error,
     clearError,
     loading: authLoading,
   } = useAuthStore();
+
+  useEffect(() => {
+    if (token && !authLoading) {
+      navigate(from, { replace: true });
+    }
+  }, [token, authLoading, navigate, from]);
   const [activeTab, setActiveTab] = useState("login");
   const [showPhoneAuth, setShowPhoneAuth] = useState(false);
   const [emailLogin, setEmailLogin] = useState({ email: "", password: "" });
@@ -35,6 +45,7 @@ const LoginRegister = () => {
       return () => clearTimeout(timer);
     }
   }, [error, clearError]);
+
   const handleEmailLogin = async (e) => {
     e.preventDefault();
 
@@ -46,13 +57,14 @@ const LoginRegister = () => {
 
     try {
       await login(emailLogin.email, emailLogin.password);
-      navigate("/profile");
+      navigate(from, { replace: true });
     } catch (err) {
       setLocalError(err?.message || "Login failed");
     } finally {
       setFormLoading(false);
     }
   };
+
   const handleRegister = async (e) => {
     e.preventDefault();
     if (!registerForm.name || !registerForm.email || !registerForm.password) {
@@ -74,6 +86,7 @@ const LoginRegister = () => {
         registerForm.email,
         registerForm.password,
       );
+      navigate(from, { replace: true });
     } catch (err) {
       setLocalError(err.response?.data?.message || err.message);
     } finally {
@@ -95,6 +108,7 @@ const LoginRegister = () => {
         setFormLoading(true);
         try {
           await googleLogin(tokenResponse.access_token);
+          navigate(from, { replace: true });
         } catch (err) {
           setLocalError(err.response?.data?.message || err.message);
         } finally {
@@ -108,6 +122,7 @@ const LoginRegister = () => {
   const onPhoneSuccess = () => {
     setShowPhoneAuth(false);
     setLocalError("");
+    navigate(from, { replace: true });
   };
 
   if (authLoading) {

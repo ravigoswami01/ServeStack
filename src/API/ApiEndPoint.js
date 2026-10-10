@@ -32,6 +32,16 @@ export const endpoints = {
   },
   promoCode: {
     apply: "/api/promos/apply",
-  }
+  },
 
+  Bookings: {
+    create: "/api/bookings",
+    getAll: "/api/bookings",
+    getById: (id) => `/api/bookings/${id}`,
+    cancel: (id) => `/api/bookings/${id}/cancel`,
+  },
+
+  ai: {
+    chat: "/api/ai/chat",
+  }
 };
